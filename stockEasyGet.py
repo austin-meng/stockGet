@@ -186,8 +186,7 @@ class Application(tk.Frame):
         if len(fn)>0:
             try:
                 self.stock_df = pd.read_csv(fn,sep=',',parse_dates=True,index_col='Date')
-                self.btnDraw.config(state=tk.NORMAL)
-                self.btnSaveImg.config(state=tk.NORMAL)
+                self.btnDraw.config(state=tk.NORMAL)                
             except Exception as e:
                 messagebox.showinfo(title='Error',message=e)
 
