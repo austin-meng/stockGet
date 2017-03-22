@@ -14,6 +14,8 @@ from datetime import date
 import matplotlib.pyplot as plt
 import numpy as np 
 import pandas as pd
+from bs4 import BeautifulSoup
+import re
 
 class Application(tk.Frame):
     def __init__(self,master=None):
@@ -43,15 +45,15 @@ class Application(tk.Frame):
         self.notebook.grid(row=0,column=0,sticky='e'+'w'+'s'+'n')
         
         self.frmData = tk.Frame(self.notebook)
-        # self.frmStlist = tk.Frame(self.notebook)
+        self.frmStCode = tk.Frame(self.notebook)
         self.frmDraw = tk.Frame(self.notebook)
 
         self.notebook.add(self.frmData,text='Download',padding=3)
-        # self.notebook.add(self.frmStlist,text='Stock Code',padding=3)
+        self.notebook.add(self.frmStCode,text='Stock Code',padding=3)
         self.notebook.add(self.frmDraw,text='Draw',padding=3)
 
         self.createFrmData()
-        # self.createFrmStlist()
+        self.createFrmStCode()
         self.createFrmDraw()
 
     def createFrmData(self):
@@ -68,7 +70,7 @@ class Application(tk.Frame):
         self.t1.set(str(date.today()))
 
         self.lfDownload = tk.LabelFrame(self.frmData,bd=2,text='Download stock data')
-        self.lfDownload.grid(row=0,column=0,padx=30,pady=5,ipadx=10,ipady=5)
+        self.lfDownload.grid(row=0,column=0,padx=30,pady=10,ipadx=10,ipady=5)
 
         self.lblCode = tk.Label(self.lfDownload,text="Stock Code:")
         self.entryCode = tk.Entry(self.lfDownload,textvariable=self.code)
@@ -89,9 +91,6 @@ class Application(tk.Frame):
         self.btnSavePath = tk.Button(self.lfDownload,text='Open',command=self.saveas_path,anchor='center')
         self.btnDownload = tk.Button(self.lfDownload,text='Download',command=self.download,anchor='e')
         
-        # self.lblstatus = tk.Label(self.frmData,text='Status:')
-        # self.statusbar = tk.Label(self.frmData,text=self.status.get(),bd=1,textvariable=self.status)
-        
         self.lblCode.grid(row=0,column=0,sticky='w')
         self.entryCode.grid(row=1,column=0,columnspan=2,sticky=tk.E+tk.W)
         self.lblmarket.grid(row=2,column=0,columnspan=2,sticky='w')
@@ -107,8 +106,31 @@ class Application(tk.Frame):
         self.btnDownload.grid(row=10,column=1,sticky='e')
        
 
-    # def createFrmStlist(self):
-    #     pass
+    def createFrmStCode(self):
+        self.codeList = tk.StringVar()
+        self.status = tk.StringVar()
+
+        self.lfStCode = tk.LabelFrame(self.frmStCode,text='Get Stock Code List')
+        self.lfStCode.grid(row=0,column=0,padx=10,pady=5,ipadx=5,ipady=5)
+
+        self.btnFrmWeb = tk.Button(self.lfStCode,text='Get Code from Web',command=self.getCodeList)
+        self.lblor = tk.Label(self.lfStCode,text='or')
+        self.btnFrmLoc = tk.Button(self.lfStCode,text='Open Files',command=self.importCode)
+        self.txtCodeList = tk.Text(self.lfStCode,width=35,height=25)
+        self.btnExport = tk.Button(self.lfStCode,text='Export Stock Code',command=self.exportCode)
+        # self.scrbar = tk.Scrollbar(self.txtCodeList,orient=tk.VERTICAL)
+        # self.txtCodeList.config(yscrollcommand=self.scrbar.set)
+        # self.scrbar.config(command=self.txtCodeList.yview)
+        # self.lblstatus = tk.Label(self.lfStCode,textvariable=self.status)
+
+        self.btnFrmWeb.grid(row=0,column=0)
+        self.lblor.grid(row=0,column=1,padx=10)
+        self.btnFrmLoc.grid(row=0,column=2)
+        self.txtCodeList.grid(row=1,column=0,columnspan=3,sticky='w'+'e')
+        # self.scrbar.grid(row=0,column=1)
+        # self.lblstatus.grid(row=2,column=0,sticky='w')
+        self.btnExport.grid(row=2,column=2,sticky='e')
+
 
     def createFrmDraw(self):
         self.importPath = tk.StringVar()
@@ -119,7 +141,7 @@ class Application(tk.Frame):
         self.lbCols = tk.StringVar()
 
         self.lfDraw = tk.LabelFrame(self.frmDraw,text='Set Parameters')
-        self.lfDraw.grid(row=0,column=0,padx=30,pady=5,ipadx=10,ipady=5)
+        self.lfDraw.grid(row=0,column=0,padx=30,pady=10,ipadx=10,ipady=5)
 
         self.lblImportData = tk.Label(self.lfDraw,text='Import Data:')
         self.entryImportData = tk.Entry(self.lfDraw,textvariable=self.importPath)
@@ -127,7 +149,9 @@ class Application(tk.Frame):
         self.lblSelectCol = tk.Label(self.lfDraw,text='Select Columns to Draw:')
         self.lbSelectCol = tk.Listbox(self.lfDraw,selectmode=tk.EXTENDED,listvariable=self.lbCols,width=18,height=5)
         self.lblStyle = tk.Label(self.lfDraw,text='Choose Style:')
-        self.omStyle = tk.OptionMenu(self.lfDraw,self.style,'classic','ggplot','seaborn','seaborn-notebook','seaborn-paper','bmh','grayscale')
+        self.omStyle = tk.OptionMenu(self.lfDraw,self.style,'classic','ggplot','bmh','grayscale','seaborn','seaborn-notebook','seaborn-paper','seaborn-whitegrid', 'seaborn-muted','seaborn-deep',\
+          'seaborn-colorblind', 'seaborn-dark', 'seaborn-white', 'seaborn-talk', 'seaborn-poster',\
+            'seaborn-dark-palette', 'seaborn-bright', 'seaborn-ticks', 'seaborn-darkgrid', 'fivethirtyeight')
         self.lblTitle = tk.Label(self.lfDraw,text='Figure Title:')
         self.entryTitle = tk.Entry(self.lfDraw,textvariable=self.figtitle)
         self.btnDraw = tk.Button(self.lfDraw,text='Draw',state=tk.DISABLED,command=self.drawData)
@@ -142,25 +166,15 @@ class Application(tk.Frame):
         self.omStyle.grid(row=5,column=0,columnspan=2,sticky='e'+'w')
         self.lblTitle.grid(row=6,column=0,sticky='w')
         self.entryTitle.grid(row=7,column=0,columnspan=2,sticky='e'+'w')
-        # listbox
         self.btnDraw.grid(row=8,column=1,sticky='e',ipadx=19)
         self.btnSaveImg.grid(row=9,column=1,sticky='e')
 
-        # self.fig = Figure(figsize=(6, 5), dpi=100)
-        # self.ax = self.fig.add_subplot(111)
-        # self.canvas = FigureCanvasTkAgg(self.fig, master=self.lfDraw)
-        # self.canvas.show()
-        # self.canvas.get_tk_widget().grid(row=2,column=0,columnspan=3)
-  
     def saveas_path(self):
         fpath = filedialog.asksaveasfilename(title='Save as',filetypes=[('csv files','.csv')])
         self.outpath.set(fpath)
 
     def f_open(self):
         filedialog.askopenfilename()
-
-    # def f_exit(self):
-    #     root.destroy()
 
     def h_help(self):
         helpInfo = """
@@ -191,12 +205,10 @@ class Application(tk.Frame):
         return (y_t0, int(m_t0)-1, int(d_t0), y_t1, int(m_t1)-1, int(d_t1),code,self.outpath)
 
     def download(self):
-        # self.status.set('downloading stock data...')
         url_fmt = "http://table.finance.yahoo.com/table.csv?a=%s&b=%s&c=%s&d=%s&e=%s&f=%s&s=%s"
         y_t0, m_t0, d_t0, y_t1, m_t1, d_t1,code, self.outpath= self.parseInfo()
         url = url_fmt % (m_t0, d_t0, y_t0, m_t1, d_t1, y_t1, code)
         data = ""
-        # print(url)
         try:
             r = requests.get(url, timeout=30)
             r.raise_for_status()
@@ -208,16 +220,73 @@ class Application(tk.Frame):
             messagebox.showinfo(title='Success',message='Congratulation!\nYou have successfully download stock data!')
         except Exception as e:
             messagebox.showinfo(title='Error',message=e)
+
+    def importCode(self):
+        fn = filedialog.askopenfilename(title='Open Stock Code List',filetype=[('Stock code list files','*.*')])
+        try:
+            with open(fn,'r',encoding='utf-8') as f:
+                s = f.read()
+                self.txtCodeList.insert(1.0,s)
+        except:
+            pass
+
+    def parseHTML(self,html):
+        re_market = re.compile(r'/(s[zh])(\d{6})\.html')
+        re_name = re.compile(r'(.+)\(\d{6}\)')
+        code_sz = ""
+        code_sh = ""
+        soup = BeautifulSoup(html,'html.parser')
+        for li in soup.find('div',{'id':'quotesearch'}).find_all('li'):
+            try:
+                href = li.a['href']
+                href_m = re_market.search(href)
+                market,code = href_m.group(1),href_m.group(2)
+                name = re_name.search(li.a.string).group(1)       
+                if 'sz' == market:
+                    code_sz += str(name)+'('+str(code)+')'+'\n'
+                else:
+                    code_sh += str(name)+'('+str(code)+')'+'\n'
+            except:
+                continue
+        return code_sh,code_sz
+
+    def getCodeList(self):
+        # self.status.set('Please wait...')
+        url = "http://quote.eastmoney.com/stocklist.html"
+        codeList = ''
+        try:
+            r = requests.get(url,timeout=30)
+            r.raise_for_status()
+            r.encoding=r.apparent_encoding            
+            codeList = self.parseHTML(r.text)
+        except Exception as e:
+            messagebox.showinfo(title='Error',message=e)
+        content = '='*10+'Shanghai'+'='*10+'\n' + codeList[0]
+        content += '='*10+'Shenzhen'+'='*10+'\n' + codeList[1]
+        # self.txtCodeList.insert(1.0,'='*10+'Shanghai'+'='*10+'\n')
+        # self.txtCodeList.insert('current',str(codeList[0]))
+        # self.txtCodeList.insert('current','='*10+'Shenzhen'+'='*10+'\n')
+        # self.txtCodeList.insert('current',str(codeList[1]))
+        self.txtCodeList.insert(1.0,content)
         # self.status.set('')
+
+    def exportCode(self):
+        fn = filedialog.asksaveasfilename(title='Export Stock Code')
+        try:
+            with open(fn,'w',encoding='utf-8') as f:
+                f.write(self.txtCodeList.get(1.0,'end'))
+        except:
+            pass
 
     def importData(self):
         path = filedialog.askopenfilename(title='Choose data',filetypes=[('csv files','.csv')])
         self.importPath.set(path)
         if len(path)>0:
             try:
-                self.stock_df = pd.read_csv(path,sep=',',parse_dates=True,index_col='Date')
-                self.btnDraw.config(state=tk.NORMAL)
+                self.stock_df = pd.read_csv(path,sep=',',parse_dates=True,index_col='Date')                
                 self.lbCols.set(tuple(self.stock_df.columns[:4]))
+                self.lbSelectCol.selection_set(0)
+                self.btnDraw.config(state=tk.NORMAL)
             except Exception as e:
                 messagebox.showinfo(title='Error',message=e)
 
@@ -231,14 +300,19 @@ class Application(tk.Frame):
 
         figureTk = tk.Tk()
         figureTk.resizable(False,False)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=figureTk)
+        figureTk.title(self.figtitle.get())
         # self.canvas.show()
-        self.canvas.get_tk_widget().grid(row=0,column=0)        
-        self.stock_df.ix[:,cols].plot(ax=self.ax)        
-        self.ax.set_title(self.figtitle.get())
-        self.ax.set_xlabel('Date')
-        self.ax.set_ylabel('Price')
+        canvas = FigureCanvasTkAgg(self.fig, master=figureTk)
+        canvas.get_tk_widget().grid(row=0,column=0)
 
+        try:  
+            self.stock_df.ix[:,cols].plot(ax=self.ax)        
+            self.ax.set_title(self.figtitle.get())
+            self.ax.set_xlabel('Date')
+            self.ax.set_ylabel('Price')
+        except:
+            # messagebox.showinfo(title='Error',message=e)
+            pass
         self.btnSaveImg.config(state=tk.NORMAL)
 
     def saveImg(self):
