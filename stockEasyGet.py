@@ -179,7 +179,7 @@ class Application(tk.Frame):
     def h_help(self):
         helpInfo = """
         Input Format:\n
-        Stock Code: <code>.sh or <code>.sz
+        Stock Code: <code>
         Time: YYYY-MM-DD
         """
         messagebox.showinfo(title='Help',message=helpInfo)
